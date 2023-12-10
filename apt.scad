@@ -46,8 +46,10 @@ x_y_door_int_ext = 32;
 y_main_house_max = y_lr_hall_min;
 x_main_house_min = x_y_exter_wall + x_lr_ext;
 x_main_house_int_min = x_y_exter_wall + x_lr_ext + x_y_exter_wall;
+y_apt_int_max = y_lr_n_wall_min;
 y_apt_max = y_lr_n_exter_wall_max;
-x_apt_max = x_main_house_min + x_y_exter_wall + x_br_ba_ext + x_y_exter_wall;
+x_apt_int_max = x_main_house_min + x_y_exter_wall + x_br_ba_ext;
+x_apt_max = x_apt_int_max + x_y_exter_wall;
 y_hall = y_apt_max - y_main_house_max;
 z_hall_level = z_slab_ext + z_hall_slab;
 z_main_level = z_lr_floor_to_sep_top - z_main_floor_to_sep_top; // amount above lowest footing
@@ -272,9 +274,42 @@ module ba_s_wall() {
     cube([x_wall_ext, x_y_inter_wall, z_br_ba_wall_ext]);
 }
 
+module crawlspace_drain_line() {
+  pipe_diam = 4;
+  insul = 2;
+  x_offset = -(17 + insul + pipe_diam);
+  x_start = x_apt_int_max + x_offset;
+  y_start = y_origin;
+  pipe_length = 40;
+  z_start_min = 11.625;
+  z_start_max = 13;
+  z_change = z_start_max - z_start_min;
+  angular_slope = atan(z_change / pipe_length);
+  color("red")
+  translate([x_start, y_start, z_start_min])
+    rotate([-(90 - angular_slope), 0, 0])
+      cylinder(h=pipe_length, r=pipe_diam/2, $fn=10);
+}
+    
+module apt_kitchen_drain_line() {
+  pipe_diam = 3;
+  rough_pipe_ext = 5;
+  pipe_length = 208;
+  x_start = x_main_house_min - rough_pipe_ext;
+  y_start = y_origin + pipe_diam;
+  z_start_min = 11.625;
+  z_start_max = 16;
+  z_change = z_start_max - z_start_min;
+  angular_slope = atan(z_change / pipe_length);
+  color("green")
+  translate([x_start, y_start, z_start_max])
+    rotate([0, (90 + angular_slope), 0])
+      cylinder(h=pipe_length, r=pipe_diam/2, $fn=10);
+}
+
 slab();
 hall_slab();
-lr_s_wall();
+// lr_s_wall();
 lr_n_wall();
 //lr_w_wall();
 lr_hall_sep_entry_wall();
@@ -288,3 +323,5 @@ br_e_wall();
 br_ba_e_wall();
 br_ba_n_wall();
 ba_s_wall();
+crawlspace_drain_line();
+apt_kitchen_drain_line();
