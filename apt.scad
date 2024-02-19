@@ -30,6 +30,7 @@ y_lr_n_wall_min = y_lr_ext + x_y_exter_wall;
 y_lr_n_exter_wall_max = y_lr_n_wall_min + x_y_exter_wall;
 z_hall_slab = 14;
 z_hall_e_ceiling = 120;
+z_hall_w_ceiling = z_lr_e_wall - z_hall_slab;
 y_br_ba_min = 13.5;
 y_br_ba_base_min = 0;
 y_br_ba_ext = 122.75;
@@ -40,7 +41,9 @@ z_br_ba_wall_ext = 96;
 x_br_door_offset = 32;
 x_br_hall_door_offset = 5;
 z_door_int_ext = 80;
+z_door_exter_ext = 80;
 x_y_door_int_ext = 32;
+x_y_door_exter_ext = 36;
 
 // key lines
 y_main_house_max = y_lr_hall_min;
@@ -55,7 +58,6 @@ z_hall_level = z_slab_ext + z_hall_slab;
 z_main_level = z_lr_floor_to_sep_top - z_main_floor_to_sep_top; // amount above lowest footing
 // this is the z origin to the ceiling of the br ba
 z_base_to_br_ba_ceil = z_main_level + z_br_ba_wall_ext;
-
 
 stair_run = 12;
 hall_stair_total_rise = (z_main_level + z_floor_ext) - z_hall_level;
@@ -135,6 +137,38 @@ module lr_hall_sep_entry_wall() {
   y_start = y_origin + y_lr_hall_entry_wall_min;
   translate([x_start, y_start, z_slab_ext])
     cube([x_sep_wall, y_lr_hall_w_entry_wall, z_lr_e_wall]);
+}
+
+module entry_n_wall() {
+  // wall
+  rotate([90,0,0])
+  translate([0, 0, -x_y_exter_wall])
+  linear_extrude(height = x_y_exter_wall)
+    polygon([
+        [0, 0],
+        [x_hall, 0], 
+        [x_hall, z_hall_e_ceiling],
+        [0, z_hall_w_ceiling]
+    ]);
+}
+
+module entry_n_wall_with_door() {
+  x_start = x_main_house_int_min;
+  y_start = y_lr_hall_entry_wall_min + 3;
+  x_entry_door_offset = 8;
+
+  translate([x_start, y_start, z_hall_level])
+    difference() {
+      // wall
+      entry_n_wall();
+      // door
+      // -1 and +2 y offsets needed to ensure complete difference taken from rotated wall
+      translate([x_entry_door_offset, -1, 0])
+        // door without "transom" wall above it (for creating 2d floor plans)
+        cube([x_y_door_exter_ext, x_y_exter_wall + 2, z_hall_w_ceiling]);
+      //cube([x_y_door_exter_ext, x_y_exter_wall, z_hall_w_ceiling]);
+      //cube([x_y_door_exter_ext, x_y_exter_wall + 2, z_door_exter_ext]);
+    }
 }
 
 module lr_s_wall() {
@@ -221,6 +255,7 @@ module br_ba_s_wall() {
       cube([x_br_ext, x_y_inter_wall, z_br_ba_wall_ext]);
       // door
       translate([x_br_door_offset, -1, 0])
+        // door without "transom" wall above it (for creating 2d floor plans)
         cube([x_y_door_int_ext, x_y_inter_wall + 2, z_door_int_ext]);
     }
 }
@@ -236,7 +271,10 @@ module br_e_wall() {
       cube([x_y_inter_wall, y_wall_ext, z_br_ba_wall_ext]);
       // door
       translate([-1, y_ba_door_offset, z_origin])
-        cube([x_y_inter_wall + 2, x_y_door_int_ext, z_door_int_ext]);
+        // door without "transom" wall above it (for creating 2d floor plans)
+        cube([x_y_inter_wall + 2, x_y_door_int_ext, z_br_ba_wall_ext + 1]);
+        // door with "transom" wall above it (full 3d view)
+        // cube([x_y_inter_wall + 2, x_y_door_int_ext, z_door_int_ext]);
     }
 }
 
@@ -260,7 +298,10 @@ module br_ba_n_wall() {
       cube([x_wall_ext, x_y_exter_wall, z_base_to_br_ba_ceil]);
       // door
       translate([x_br_hall_door_offset, -1, z_main_level])
-        cube([x_y_door_int_ext, x_y_exter_wall + 2, z_door_int_ext]);
+        // door without "transom" wall above it (for creating 2d floor plans)
+        cube([x_y_door_int_ext, x_y_exter_wall + 2, z_base_to_br_ba_ceil]);
+        // door with transom wall above it
+        // cube([x_y_door_int_ext, x_y_exter_wall + 2, z_door_int_ext]);
 
     }
 }
@@ -274,21 +315,26 @@ module ba_s_wall() {
     cube([x_wall_ext, x_y_inter_wall, z_br_ba_wall_ext]);
 }
 
+crawlspace_drain_length = 40;
 module crawlspace_drain_line() {
   pipe_diam = 4;
   insul = 2;
   x_offset = -(17 + insul + pipe_diam);
   x_start = x_apt_int_max + x_offset;
   y_start = y_origin;
-  pipe_length = 40;
+  pipe_length = crawlspace_drain_length;
   z_start_min = 11.625;
   z_start_max = 13;
   z_change = z_start_max - z_start_min;
   angular_slope = atan(z_change / pipe_length);
-  color("red")
   translate([x_start, y_start, z_start_min])
     rotate([-(90 - angular_slope), 0, 0])
       cylinder(h=pipe_length, r=pipe_diam/2, $fn=10);
+
+  translate([x_start + 4, y_start + pipe_length, z_origin + 6])
+    rotate([90, 0, 0])
+    text(str("] ", z_start_max, "\""), size=4);
+
 }
     
 module apt_kitchen_drain_line() {
@@ -296,32 +342,142 @@ module apt_kitchen_drain_line() {
   rough_pipe_ext = 5;
   pipe_length = 208;
   x_start = x_main_house_min - rough_pipe_ext;
-  y_start = y_origin + pipe_diam;
-  z_start_min = 11.625;
-  z_start_max = 16;
+  y_start = y_origin + crawlspace_drain_length;
+  z_start_min = 13;
+  z_start_max = 18;
   z_change = z_start_max - z_start_min;
   angular_slope = atan(z_change / pipe_length);
-  color("green")
   translate([x_start, y_start, z_start_max])
     rotate([0, (90 + angular_slope), 0])
       cylinder(h=pipe_length, r=pipe_diam/2, $fn=10);
+
+  translate([x_start - 25, y_start, z_origin + 7])
+    rotate([90, 0, 0])
+    text(str(z_start_max, "\" ["), size=9);
+
+  translate([x_start + (pipe_length / 2) - 30, y_start, z_origin + z_start_max + 3])
+    rotate([90, 0, 0])
+    text(str("<- ", pipe_length, "\" ->"), size=9);
 }
 
-slab();
-hall_slab();
-// lr_s_wall();
-lr_n_wall();
-//lr_w_wall();
-lr_hall_sep_entry_wall();
-lr_hall_sep_wall();
-lr_hall_stairs();
-hall_stairs();
-hall_e_wall();
-br_ba_floor();
-br_ba_s_wall();
-br_e_wall();
-br_ba_e_wall();
-br_ba_n_wall();
-ba_s_wall();
-crawlspace_drain_line();
-apt_kitchen_drain_line();
+module kitchen_components() {
+  z_cabinet = 30;
+  x_y_cabinet_depth = 24;
+  x_y_washer_dryer = 25;
+  z_refrigerator = 66;
+
+  x_start = x_main_house_min - x_y_cabinet_depth;
+  y_start = x_y_exter_wall;
+  spacing = 0.1;
+
+  color([0.9, 0.9, 0.9, 0.3]) {
+    translate([x_start, y_start + spacing, z_slab_ext])
+      cube([x_y_cabinet_depth, 24, z_cabinet]);
+    // sink
+    translate([x_start, y_start + 24 + 2*spacing, z_slab_ext]) {
+      cube([x_y_cabinet_depth, 30, z_cabinet]);
+    }
+    // dishwasher
+    translate([x_start, y_start + 54 + 3*spacing, z_slab_ext])
+      cube([x_y_cabinet_depth, 24, z_cabinet]);
+    // cabinets
+    translate([x_start, y_start + 78 + 4*spacing, z_slab_ext])
+      cube([x_y_cabinet_depth, 30, z_cabinet]);
+    // fridge
+    translate([x_start, y_start + 108 + 5*spacing, z_slab_ext])
+      cube([x_y_cabinet_depth, 24, z_refrigerator]);
+    z_washer = 33.5;
+    z_dryer= 37;
+    //washer
+    translate([x_start, y_start + 132 + 6*spacing, z_slab_ext]) 
+      cube([x_y_washer_dryer, x_y_washer_dryer, z_washer]);
+    translate([x_start, y_start + 132 + 6*spacing, z_slab_ext + z_washer + spacing]) 
+      cube([x_y_washer_dryer, x_y_washer_dryer, z_dryer]);
+  }
+
+  // labels
+  color([0.95, 0.95, 0.95, 0.95]) {
+    // sink
+    translate([x_start, y_start + 45, z_slab_ext + 5])
+    rotate([90, 0, -90])
+      text("sink", size=4);
+    translate([x_start, y_start + 70, z_slab_ext + 5])
+    rotate([90, 0, -90])
+      text("d/w", size=4);
+    translate([x_start, y_start + 150, z_slab_ext + 5])
+    rotate([90, 0, -90])
+      text("w/d", size=4);
+   }
+
+}
+
+module apt() { 
+  // scale([25.4, 25.4, 25.4]) {
+  color([0.3, 0.3, 0.3, 0.6]) {
+    slab();
+    hall_slab();
+  }
+
+  color([0.7, 0.7, 0.7, 0.9]) {
+    lr_s_wall();
+    lr_n_wall();
+    lr_w_wall();
+  }
+
+  color([0.7, 0.7, 0.7, 0.9]) {
+    lr_hall_sep_entry_wall();
+    lr_hall_sep_wall();
+    lr_hall_stairs();
+    hall_stairs();
+    hall_e_wall();
+  }
+
+  color([0.5, 0.5, 0.5, 0.6])
+    br_ba_floor();
+
+  //projection(cut = true)
+  // translate([0, 0, -(z_slab_ext+40)])
+  color([0.7, 0.7, 0.7, 0.9]) {
+    br_ba_s_wall();
+    br_e_wall();
+    br_ba_e_wall();
+    br_ba_n_wall();
+    ba_s_wall();
+    entry_n_wall_with_door();
+  }
+
+  /*
+     color([0.8, 0, 0, 0.5])
+     crawlspace_drain_line();
+     color([0.0, 0.6, 0, 0.7])
+     apt_kitchen_drain_line();
+   */
+
+  kitchen_components();
+
+}
+
+apt();
+
+/* 
+ * Playing around with projected views
+ * Below is of kitchen from the west
+difference() {
+projection(cut = true)
+translate([0, 0, x_main_house_min + x_y_exter_wall])
+rotate([0, 90, 0])
+apt();
+
+projection(cut = true)
+translate([0, 0, x_main_house_min - x_y_exter_wall])
+rotate([0, 90, 0])
+apt();
+}
+*/
+
+
+
+// projection(cut = true)
+// translate([0, 0, -(z_slab_ext+30)])
+// apt();
+// }
