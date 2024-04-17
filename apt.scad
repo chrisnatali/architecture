@@ -37,6 +37,7 @@ y_br_ba_ext = 122.75;
 y_ba_ext = 55.5;
 x_br_ba_ext = 213.8125;
 x_br_ext = 150.0625;
+x_ba_ext = (x_br_ba_ext - x_br_ext) - x_y_inter_wall;
 z_br_ba_wall_ext = 96;
 x_br_door_offset = 32;
 x_br_hall_door_offset = 5;
@@ -360,51 +361,115 @@ module apt_kitchen_drain_line() {
     text(str("<- ", pipe_length, "\" ->"), size=9);
 }
 
+module toilet(width, basin_depth, height) {
+  radius = width/2;
+  linear_extrude(height = height) 
+  hull() {
+    translate([radius,radius + basin_depth,0]) circle(radius);
+    square([width, basin_depth]);
+  }
+}
+
+module bathroom_components() {
+  x_ba_start = x_main_house_int_min + x_br_ext + x_y_inter_wall;
+  y_ba_start = (y_main_house_max - x_y_exter_wall) - (y_ba_ext + x_y_inter_wall);
+  z_ba_start = z_main_level + z_floor_ext;
+  // tub
+  y_tub_ext = 24;
+  translate([x_ba_start, y_ba_start, z_ba_start])
+    cube([x_ba_ext, y_tub_ext, 22]);
+
+  y_toilet_ext = 15;
+  translate([x_ba_start + x_ba_ext, y_ba_start + y_tub_ext + 4, z_ba_start])
+  rotate([0, 0, 90]) 
+  toilet(y_toilet_ext, 4, 17);
+
+  // sink
+  x_sink_ext = 12;
+  y_sink_ext = 22;
+  z_sink_ext = 32;
+  translate([x_ba_start + x_ba_ext - x_sink_ext, y_ba_start + y_tub_ext + 4 + y_toilet_ext + 4, z_ba_start])
+  cube([x_sink_ext, y_sink_ext, z_sink_ext]);
+}
+
+module hood(width, depth, height, box_height, reduction_factor) {
+  small_width = width * reduction_factor;
+  width_shift = (width - small_width)/2;
+
+  hull() {
+    translate([width_shift, 0, height - box_height]) cube([width * reduction_factor, depth * reduction_factor, box_height]);
+    cube([width, depth, box_height]);
+  }
+}
+
 module kitchen_components() {
   z_cabinet = 30;
   x_y_cabinet_depth = 24;
   x_y_washer_dryer = 25;
   z_refrigerator = 66;
+  x_stove_ext = 30;
+  y_stove_ext = 25;
+  z_stove_ext = 32;
+  x_wide_cabinet_ext = 28;
 
-  x_start = x_main_house_min - x_y_cabinet_depth;
-  y_start = x_y_exter_wall;
   spacing = 0.1;
+  x_start = x_main_house_min - (2*spacing + x_y_cabinet_depth + x_wide_cabinet_ext + x_stove_ext);
+  y_start = x_y_exter_wall;
 
+  // South Wall
   color([0.9, 0.9, 0.9, 0.3]) {
+    //stove
     translate([x_start, y_start + spacing, z_slab_ext])
-      cube([x_y_cabinet_depth, 24, z_cabinet]);
-    // sink
-    translate([x_start, y_start + 24 + 2*spacing, z_slab_ext]) {
+      cube([x_stove_ext, y_stove_ext, z_stove_ext]);
+ 
+    //hood
+    y_hood_ext = y_stove_ext/2;
+    z_hood_ext = 30;
+    z_hood_start = z_slab_ext + z_stove_ext*2;
+    z_hood_box_height = 8;
+    translate([x_start, y_start + spacing, z_hood_start])
+    hood(x_stove_ext, y_hood_ext, z_hood_ext, z_hood_box_height, 0.3);
+
+    //cabinet that runs to corner
+    translate([x_start + x_stove_ext + spacing, y_start + spacing, z_slab_ext])
+      cube([x_y_cabinet_depth + x_wide_cabinet_ext, x_y_cabinet_depth, z_cabinet]);
+  }
+
+  x_east_wall_start = x_main_house_min - x_y_cabinet_depth;
+  // Eastern Wall Parts
+  color([0.9, 0.9, 0.9, 0.3]) {
+   // sink
+    translate([x_east_wall_start, y_start + 24 + 2*spacing, z_slab_ext]) {
       cube([x_y_cabinet_depth, 30, z_cabinet]);
     }
     // dishwasher
-    translate([x_start, y_start + 54 + 3*spacing, z_slab_ext])
+    translate([x_east_wall_start, y_start + 54 + 3*spacing, z_slab_ext])
       cube([x_y_cabinet_depth, 24, z_cabinet]);
     // cabinets
-    translate([x_start, y_start + 78 + 4*spacing, z_slab_ext])
+    translate([x_east_wall_start, y_start + 78 + 4*spacing, z_slab_ext])
       cube([x_y_cabinet_depth, 30, z_cabinet]);
     // fridge
-    translate([x_start, y_start + 108 + 5*spacing, z_slab_ext])
+    translate([x_east_wall_start, y_start + 108 + 5*spacing, z_slab_ext])
       cube([x_y_cabinet_depth, 24, z_refrigerator]);
     z_washer = 33.5;
     z_dryer= 37;
     //washer
-    translate([x_start, y_start + 132 + 6*spacing, z_slab_ext]) 
+    translate([x_east_wall_start, y_start + 132 + 6*spacing, z_slab_ext]) 
       cube([x_y_washer_dryer, x_y_washer_dryer, z_washer]);
-    translate([x_start, y_start + 132 + 6*spacing, z_slab_ext + z_washer + spacing]) 
+    translate([x_east_wall_start, y_start + 132 + 6*spacing, z_slab_ext + z_washer + spacing]) 
       cube([x_y_washer_dryer, x_y_washer_dryer, z_dryer]);
   }
 
   // labels
   color([0.95, 0.95, 0.95, 0.95]) {
     // sink
-    translate([x_start, y_start + 45, z_slab_ext + 5])
+    translate([x_east_wall_start, y_start + 45, z_slab_ext + 5])
     rotate([90, 0, -90])
-      text("sink", size=4);
-    translate([x_start, y_start + 70, z_slab_ext + 5])
+      text("Sink", size=4);
+    translate([x_east_wall_start, y_start + 70, z_slab_ext + 5])
     rotate([90, 0, -90])
       text("d/w", size=4);
-    translate([x_start, y_start + 150, z_slab_ext + 5])
+    translate([x_east_wall_start, y_start + 150, z_slab_ext + 5])
     rotate([90, 0, -90])
       text("w/d", size=4);
    }
@@ -446,14 +511,13 @@ module apt() {
     entry_n_wall_with_door();
   }
 
-  /*
      color([0.8, 0, 0, 0.5])
      crawlspace_drain_line();
      color([0.0, 0.6, 0, 0.7])
      apt_kitchen_drain_line();
-   */
 
   kitchen_components();
+  bathroom_components();
 
 }
 
