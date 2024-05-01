@@ -10,7 +10,7 @@ y_lr_ext = 316.3125;
 x_y_exter_wall = 12;
 x_y_inter_wall = 5;
 x_sep_wall = 12;
-x_hall = 60.875;
+x_hall = 47.5;
 z_lr_e_floor_to_ceil = 147.3125;
 z_lr_e_wall = 147.3125;
 y_lr_hall_int_min = 141;
@@ -34,7 +34,7 @@ z_hall_w_ceiling = z_lr_e_wall - z_hall_slab;
 y_br_ba_min = 13.5;
 y_br_ba_base_min = 0;
 y_br_ba_ext = 122.75;
-y_ba_ext = 55.5;
+y_ba_ext = 85;
 x_br_ba_ext = 213.8125;
 x_br_ext = 150.0625;
 x_ba_ext = (x_br_ba_ext - x_br_ext) - x_y_inter_wall;
@@ -388,7 +388,7 @@ module bathroom_components() {
   x_sink_ext = 12;
   y_sink_ext = 22;
   z_sink_ext = 32;
-  translate([x_ba_start + x_ba_ext - x_sink_ext, y_ba_start + y_tub_ext + 4 + y_toilet_ext + 4, z_ba_start])
+  translate([x_ba_start + x_ba_ext - x_sink_ext, y_ba_start + y_ba_ext - y_sink_ext, z_ba_start])
   cube([x_sink_ext, y_sink_ext, z_sink_ext]);
 }
 
